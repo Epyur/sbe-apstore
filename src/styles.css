@@ -1,0 +1,12 @@
+/* SBE Apstore — специфичные стили поверх дизайн-системы sbe-core. */
+
+.sbe-apstore {
+  padding: 8px;
+}
+
+.sbe-apstore .tn-store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
