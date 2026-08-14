@@ -1,0 +1,34 @@
+# AGENTS.md — sbe-apstore (SBE Apstore)
+
+Магазин плагинов компании: скачивает `registry.json` из `Epyur/sbe-apstore-registry`,
+устанавливает и обновляет плагины SBE из их GitHub-репозиториев (`main`-ветка).
+
+## Структура
+
+- `src/main.ts` — `SbeApstorePlugin`: регистрирует view и ribbon, инициализирует store.
+- `src/services/store-manager.ts` — загрузка реестра (`requestUrl`, кэш `registryUrl`/`lastCheckAt` в `data.json`), установка/обновление плагинов.
+- `src/ui/store-view.ts` — вкладки «Магазин / Установленные / Обновления».
+- `src/ui/settings-tab.ts` — URL реестра, проверка доступности.
+- `src/styles.css` — классы `tn-*` поверх design-системы sbe-core.
+- `manifest.json` — author: Полищук Евгений (polishchuk@tn.ru).
+
+## Ключевые решения
+
+- Механика установки (из `updater/`): `requestUrl` → файлы реестра → запись адаптером → `delete require.cache` → `disablePlugin(id)`/`enablePlugin(id)` через `(app as any).plugins`.
+- `required: true` в реестре — системный плагин без кнопки «Установить» (только «Обновить»).
+- Реестр кэшируется; проверка обновлений по кнопке в view. UI на русском.
+- Сборка: `npm run build` (esbuild + `build.onEnd` для склейки tokens/components sbe-core + собственных стилей). `npx tsc --noEmit` EXIT=0.
+
+## История работ
+
+### 2026-08-14 — v0.1.0 (создание)
+- Плагин создан по дизайну `docs/superpowers/specs/2026-08-14-sbe-plugin-system-design.md`; встроен и включён в vault (`community-plugins.json`).
+- Исправление сборки: `ctx.onEnd` — не функция → сборка styles через плагин-хук `build.onEnd`.
+- Код-ревью: инлайн-стили в store-view заменены на классы `.tn-plugin-head`/`.tn-plugin-actions` (коммит `bc678ac`).
+- Репозиторий: `Epyur/sbe-apstore` (public), ветка `main` (master переименована), основная ветка `main`.
+- После внедрения `sbe-llm`/`sbe-presentations` в реестр апстор показывает их в магазине.
+- **Примечание конвенции**: с 2026-08-14 каждая папка плагина ведёт свой `AGENTS.md` (история) + `specification.md`. Этот файл создан задним числом по конвенции.
+
+## Правила
+
+- `catch(e: unknown)` + `errorMessage()` (sbe-core); `requestUrl()`; `window.setTimeout()`; без `any`; CSS-классы `tn-*`; UI на русском; автор — Полищук Евгений (polishchuk@tn.ru).
