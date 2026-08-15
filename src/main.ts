@@ -34,7 +34,7 @@ export default class SbeApstorePlugin extends Plugin {
 
     this.registerView(APSTORE_VIEW_TYPE, leaf => new ApstoreView(leaf, this.manager));
 
-    this.addRibbonIcon('store', 'ЦУП СБЕ ПМиПИР', () => {
+    this.addRibbonIcon('brain', 'ЦУП СБЕ ПМиПИР', () => {
       void this.activateView();
     });
 

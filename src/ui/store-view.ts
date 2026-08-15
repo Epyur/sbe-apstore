@@ -36,7 +36,7 @@ export class ApstoreView extends ItemView {
   }
 
   getIcon(): string {
-    return 'store';
+    return 'brain';
   }
 
   async onOpen(): Promise<void> {
