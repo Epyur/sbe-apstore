@@ -58,6 +58,7 @@
 .tn-btn-ghost:hover:not(:disabled) { border-color: var(--tn-brand); color: var(--tn-brand); }
 .tn-btn-link { background: none; color: var(--tn-brand); padding: 4px 6px; font-weight: 600; }
 .tn-btn-link.danger { color: var(--tn-err); }
+.tn-btn-sm { padding: 3px 10px; font-size: 12px; margin-left: 8px; }
 .tn-btn-block { display: block; width: 100%; margin-bottom: 10px; }
 
 /* ---------- Таблицы ---------- */

@@ -19,7 +19,6 @@ export class ApstoreView extends ItemView {
   private tab: Tab = 'store';
   private navEl!: HTMLElement;
   private bodyEl!: HTMLElement;
-  private loaded = false;
   private busy = false;
 
   constructor(leaf: WorkspaceLeaf, manager: StoreManager) {
@@ -45,10 +44,7 @@ export class ApstoreView extends ItemView {
     this.renderNav();
     this.bodyEl = this.contentEl.createDiv();
     this.bodyEl.createDiv({ cls: 'tn-empty', text: 'Загрузка…' });
-    if (!this.loaded) {
-      await this.manager.refresh();
-      this.loaded = true;
-    }
+    await this.manager.refresh();
     this.render();
   }
 
@@ -175,6 +171,18 @@ export class ApstoreView extends ItemView {
         btn.addEventListener('click', () => void this.install(card, true));
         break;
       default:
+        if (card.entry.hasView) {
+          btn.setText('Открыть');
+          btn.addEventListener('click', () => void this.openPlugin({
+            id: card.entry.id,
+            dir: card.entry.dir,
+            name: card.local?.name || card.entry.name,
+            version: card.local?.version || '',
+            description: card.local?.description,
+            hasView: true,
+          }));
+          break;
+        }
         btn.disabled = true;
         btn.classList.add('tn-btn-ghost');
         btn.setText('Установлен');
@@ -191,29 +199,30 @@ export class ApstoreView extends ItemView {
     const table = wrap.createEl('table', { cls: 'tn-table' });
     const thead = table.createEl('thead');
     const headRow = thead.createEl('tr');
-    for (const th of ['Плагин', 'ID', 'Версия', 'Описание', '']) {
+    for (const th of ['Плагин', 'ID', 'Версия', 'Описание']) {
       headRow.createEl('th', { text: th });
     }
     const tbody = table.createEl('tbody');
     for (const p of installed) {
       const row = tbody.createEl('tr');
-      row.createEl('td', { text: p.name });
+      const nameCell = row.createEl('td');
+      nameCell.createSpan({ text: p.name });
+      if (p.hasView) {
+        const openBtn = nameCell.createEl('button', {
+          cls: 'tn-btn tn-btn-ghost tn-btn-sm',
+          text: 'Открыть',
+        });
+        openBtn.addEventListener('click', () => void this.openPlugin(p));
+      }
       row.createEl('td', { text: p.id });
       row.createEl('td', { text: `v${p.version}` });
       row.createEl('td', { text: p.description || '—' });
-      const actionCell = row.createEl('td');
-      if (p.hasView) {
-        const openBtn = actionCell.createEl('button', { cls: 'tn-btn tn-btn-ghost', text: 'Открыть' });
-        openBtn.addEventListener('click', () => void this.openPlugin(p));
-      } else {
-        actionCell.setText('—');
-      }
     }
     if (installed.length === 0) {
       tbody.createEl('tr').createEl('td', {
         cls: 'tn-empty',
         text: 'Установленных плагинов из реестра нет',
-      }).colSpan = 5;
+      }).colSpan = 4;
     }
   }
 
