@@ -194,6 +194,13 @@ export class ApstoreView extends ItemView {
       actions.append(updateBtn);
     }
 
+    const settingsBtn = document.createElement('button');
+    settingsBtn.className = 'tn-btn tn-btn-ghost';
+    settingsBtn.setText('⚙');
+    settingsBtn.setAttr('title', `Настройки «${card.entry.name}»`);
+    settingsBtn.addEventListener('click', () => this.openPluginSettings(card.entry.id, card.entry.name));
+    actions.append(settingsBtn);
+
     return el;
   }
 
@@ -263,7 +270,7 @@ export class ApstoreView extends ItemView {
     const table = wrap.createEl('table', { cls: 'tn-table' });
     const thead = table.createEl('thead');
     const headRow = thead.createEl('tr');
-    for (const th of ['Плагин', 'ID', 'Версия', 'Описание']) {
+    for (const th of ['Плагин', 'Настройки', 'ID', 'Версия', 'Описание']) {
       headRow.createEl('th', { text: th });
     }
     const tbody = table.createEl('tbody');
@@ -280,6 +287,13 @@ export class ApstoreView extends ItemView {
       } else {
         nameCell.createSpan({ text: p.name });
       }
+      const settingsCell = row.createEl('td');
+      const settingsBtn = settingsCell.createEl('button', {
+        cls: 'tn-btn tn-btn-ghost',
+        text: '⚙',
+        attr: { title: `Настройки «${p.name}»` },
+      });
+      settingsBtn.addEventListener('click', () => this.openPluginSettings(p.id, p.name));
       row.createEl('td', { text: p.id });
       row.createEl('td', { text: `v${p.version}` });
       row.createEl('td', { text: p.description || '—' });
@@ -288,7 +302,7 @@ export class ApstoreView extends ItemView {
       tbody.createEl('tr').createEl('td', {
         cls: 'tn-empty',
         text: 'Установленных плагинов из реестра нет',
-      }).colSpan = 4;
+      }).colSpan = 5;
     }
   }
 
@@ -303,6 +317,27 @@ export class ApstoreView extends ItemView {
       await service.open();
     } catch (e: unknown) {
       new Notice(`ЦУП: ${errorMessage(e)}`);
+    }
+  }
+
+  /** Открывает настройки плагина через недокументированное API app.setting.openTabById. */
+  private openPluginSettings(id: string, name: string): void {
+    try {
+      const appSetting = (this.app as unknown as { setting?: unknown }).setting;
+      if (!appSetting) throw new Error('Настройки Obsidian недоступны');
+      const settingModal = appSetting as {
+        open?: () => void;
+        openTabById?: (tabId: string) => unknown;
+        pluginTabs?: Array<{ id?: string }>;
+      };
+      if (settingModal.pluginTabs && !settingModal.pluginTabs.some(t => t.id === id)) {
+        new Notice(`ЦУП: у плагина «${name}» нет настроек`);
+        return;
+      }
+      settingModal.open?.();
+      settingModal.openTabById?.(id);
+    } catch (e: unknown) {
+      new Notice(`ЦУП: не удалось открыть настройки «${name}» — ${errorMessage(e)}`);
     }
   }
 
