@@ -1,9 +1,9 @@
 {
   "id": "sbe-apstore",
-  "name": "SBE Apstore",
-  "version": "0.2.0",
+  "name": "ЦУП СБЕ ПМиПИР",
+  "version": "0.2.1",
   "minAppVersion": "1.11.4",
-  "description": "Магазин плагинов компании: реестр, установка и обновления.",
+  "description": "Центр управления плагинами СБЕ ПМиПИР: реестр, установка, обновления, приложения.",
   "author": "Полищук Евгений (polishchuk@tn.ru)",
   "isDesktopOnly": true
 }

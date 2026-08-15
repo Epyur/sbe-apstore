@@ -6,9 +6,10 @@ import type { InstalledPlugin, PluginCard } from '../../../sbe-core/src/types';
 
 export const APSTORE_VIEW_TYPE = 'sbe-apstore-view';
 
-type Tab = 'store' | 'installed' | 'updates';
+type Tab = 'apps' | 'store' | 'installed' | 'updates';
 
 const TABS: Array<{ id: Tab; label: string }> = [
+  { id: 'apps', label: 'Пользовательские приложения' },
   { id: 'store', label: 'Магазин' },
   { id: 'installed', label: 'Установленные' },
   { id: 'updates', label: 'Обновления' },
@@ -16,7 +17,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
 
 export class ApstoreView extends ItemView {
   private manager: StoreManager;
-  private tab: Tab = 'store';
+  private tab: Tab = 'apps';
   private navEl!: HTMLElement;
   private bodyEl!: HTMLElement;
   private busy = false;
@@ -31,7 +32,7 @@ export class ApstoreView extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'SBE Apstore';
+    return 'ЦУП СБЕ ПМиПИР';
   }
 
   getIcon(): string {
@@ -73,6 +74,9 @@ export class ApstoreView extends ItemView {
   private render(): void {
     this.bodyEl.empty();
     switch (this.tab) {
+      case 'apps':
+        this.renderApps();
+        break;
       case 'store':
         this.renderStore();
         break;
@@ -82,6 +86,23 @@ export class ApstoreView extends ItemView {
       case 'updates':
         this.renderUpdates();
         break;
+    }
+  }
+
+  /** Вкладка «Пользовательские приложения»: только плагины с открываемым UI (hasView). */
+  private renderApps(): void {
+    const cards = this.manager.getCards().filter(c => c.entry.hasView);
+    const card = this.bodyEl.createDiv({ cls: 'tn-card' });
+    card.createDiv({ cls: 'tn-card-head' })
+      .createEl('h3', { text: 'Пользовательские приложения' });
+
+    const grid = this.bodyEl.createDiv({ cls: 'tn-store-grid' });
+    if (cards.length === 0) {
+      grid.createDiv({ cls: 'tn-empty', text: 'Открываемых приложений нет' });
+      return;
+    }
+    for (const cardData of cards) {
+      grid.append(this.buildAppCard(cardData));
     }
   }
 
@@ -126,9 +147,60 @@ export class ApstoreView extends ItemView {
     const localV = card.local ? `локально: v${card.local.version}` : 'не установлен';
     meta.setText(`${remoteV} · ${localV} · ${card.entry.repo}`);
 
-    const actions = el.createDiv();
-    actions.style.marginTop = '8px';
+    const actions = el.createDiv({ cls: 'tn-plugin-actions' });
     actions.append(this.actionButton(card));
+
+    return el;
+  }
+
+  /** Карточка приложения: кнопка «Открыть» и «Обновить» (только при доступном обновлении). */
+  private buildAppCard(card: PluginCard): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'tn-plugin-card';
+    el.setAttribute('data-id', card.entry.id);
+
+    const head = el.createDiv({ cls: 'tn-plugin-head' });
+    head.createEl('h4', { text: card.entry.name });
+    head.append(this.stateBadge(card));
+
+    const desc = card.remote?.description || card.local?.description || 'Нет описания';
+    el.createDiv({ cls: 'tn-plugin-desc', text: desc });
+
+    const meta = el.createDiv({ cls: 'tn-plugin-meta' });
+    const remoteV = card.remote ? `репозиторий: v${card.remote.version}` : 'репозиторий недоступен';
+    const localV = card.local ? `локально: v${card.local.version}` : 'не установлен';
+    meta.setText(`${remoteV} · ${localV} · ${card.entry.repo}`);
+
+    const actions = el.createDiv({ cls: 'tn-plugin-actions' });
+
+    if (card.state === 'not-installed') {
+      const installBtn = document.createElement('button');
+      installBtn.className = 'tn-btn tn-btn-primary';
+      installBtn.setText('Установить');
+      installBtn.addEventListener('click', () => void this.install(card, false));
+      actions.append(installBtn);
+    } else {
+      const openBtn = document.createElement('button');
+      openBtn.className = 'tn-btn tn-btn-primary';
+      openBtn.setText('Открыть');
+      openBtn.addEventListener('click', () => void this.openPlugin({
+        id: card.entry.id,
+        dir: card.entry.dir,
+        name: card.local?.name || card.entry.name,
+        version: card.local?.version || '',
+        description: card.local?.description,
+        hasView: true,
+      }));
+      actions.append(openBtn);
+
+      if (card.state === 'update-available' && card.local && card.remote) {
+        const updateBtn = document.createElement('button');
+        updateBtn.className = 'tn-btn tn-btn-ghost';
+        updateBtn.setText(`Обновить: v${card.local.version} → v${card.remote.version}`);
+        updateBtn.addEventListener('click', () => void this.install(card, true));
+        actions.append(updateBtn);
+      }
+    }
 
     return el;
   }
@@ -233,12 +305,12 @@ export class ApstoreView extends ItemView {
     try {
       const service = await getService(p.id as keyof import('../../../sbe-core/src/types').SbeServiceMap);
       if (!isOpenable(service)) {
-        new Notice(`SBE Apstore: у плагина «${p.name}» нет открываемого UI`);
+        new Notice(`ЦУП: у плагина «${p.name}» нет открываемого UI`);
         return;
       }
       await service.open();
     } catch (e: unknown) {
-      new Notice(`SBE Apstore: ${errorMessage(e)}`);
+      new Notice(`ЦУП: ${errorMessage(e)}`);
     }
   }
 
@@ -287,11 +359,11 @@ export class ApstoreView extends ItemView {
       this.render();
       new Notice(
         summary.updates.length > 0
-          ? `SBE Apstore: доступно обновлений: ${summary.updates.length}`
-          : 'SBE Apstore: обновлений нет',
+          ? `ЦУП: доступно обновлений: ${summary.updates.length}`
+          : 'ЦУП: обновлений нет',
       );
     } catch (e: unknown) {
-      new Notice(`SBE Apstore: ошибка проверки: ${errorMessage(e)}`);
+      new Notice(`ЦУП: ошибка проверки: ${errorMessage(e)}`);
     } finally {
       this.busy = false;
     }
@@ -303,14 +375,14 @@ export class ApstoreView extends ItemView {
     try {
       if (update) {
         await this.manager.update(card.entry.id);
-        new Notice(`SBE Apstore: «${card.entry.name}» обновлён`);
+        new Notice(`ЦУП: «${card.entry.name}» обновлён`);
       } else {
         await this.manager.install(card.entry.id);
-        new Notice(`SBE Apstore: «${card.entry.name}» установлен`);
+        new Notice(`ЦУП: «${card.entry.name}» установлен`);
       }
       this.render();
     } catch (e: unknown) {
-      new Notice(`SBE Apstore: ${errorMessage(e)}`);
+      new Notice(`ЦУП: ${errorMessage(e)}`);
     } finally {
       this.busy = false;
     }
@@ -324,11 +396,11 @@ export class ApstoreView extends ItemView {
       this.render();
       new Notice(
         res.failed.length === 0
-          ? `SBE Apstore: обновлено: ${res.updated.length}`
-          : `SBE Apstore: обновлено ${res.updated.length}, ошибок: ${res.failed.length}`,
+          ? `ЦУП: обновлено: ${res.updated.length}`
+          : `ЦУП: обновлено ${res.updated.length}, ошибок: ${res.failed.length}`,
       );
     } catch (e: unknown) {
-      new Notice(`SBE Apstore: ${errorMessage(e)}`);
+      new Notice(`ЦУП: ${errorMessage(e)}`);
     } finally {
       this.busy = false;
     }

@@ -34,13 +34,13 @@ export default class SbeApstorePlugin extends Plugin {
 
     this.registerView(APSTORE_VIEW_TYPE, leaf => new ApstoreView(leaf, this.manager));
 
-    this.addRibbonIcon('store', 'SBE Apstore', () => {
+    this.addRibbonIcon('store', 'ЦУП СБЕ ПМиПИР', () => {
       void this.activateView();
     });
 
     this.addCommand({
       id: 'open-apstore',
-      name: 'Открыть SBE Apstore',
+      name: 'Открыть ЦУП СБЕ ПМиПИР',
       callback: () => {
         void this.activateView();
       },
@@ -105,16 +105,16 @@ export default class SbeApstorePlugin extends Plugin {
       await this.saveSettings();
       if (summary.updates.length > 0) {
         new Notice(
-          `SBE Apstore: доступно обновлений: ${summary.updates.length}. Откройте SBE Apstore → Обновления.`,
+          `ЦУП: доступно обновлений: ${summary.updates.length}. Откройте ЦУП СБЕ ПМиПИР → Обновления.`,
         );
       } else if (!silent) {
-        new Notice('SBE Apstore: обновлений нет');
+        new Notice('ЦУП: обновлений нет');
       }
       return summary;
     } catch (e: unknown) {
       const msg = errorMessage(e);
-      if (!silent) new Notice(`SBE Apstore: ошибка проверки: ${msg}`);
-      console.warn('SBE Apstore: проверка обновлений не удалась:', msg);
+      if (!silent) new Notice(`ЦУП: ошибка проверки: ${msg}`);
+      console.warn('ЦУП: проверка обновлений не удалась:', msg);
       return null;
     }
   }

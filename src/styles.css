@@ -1,4 +1,4 @@
-/* SBE Apstore — специфичные стили поверх дизайн-системы sbe-core. */
+/* ЦУП СБЕ ПМиПИР — специфичные стили поверх дизайн-системы sbe-core. */
 
 .sbe-apstore {
   padding: 8px;
@@ -9,4 +9,11 @@
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 14px;
   margin-top: 14px;
+}
+
+.sbe-apstore .tn-plugin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
 }

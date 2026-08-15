@@ -12,7 +12,7 @@ export class ApstoreSettingsTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'SBE Apstore' });
+    containerEl.createEl('h2', { text: 'ЦУП СБЕ ПМиПИР' });
 
     new Setting(containerEl)
       .setName('URL реестра')

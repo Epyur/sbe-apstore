@@ -20,7 +20,7 @@ const stylesPlugin = {
       try {
         buildStyles();
       } catch (e) {
-        console.error('SBE Apstore: не удалось собрать styles.css:', e);
+        console.error('ЦУП: не удалось собрать styles.css:', e);
       }
     });
   },

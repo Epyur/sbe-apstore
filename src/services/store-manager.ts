@@ -60,7 +60,7 @@ export class StoreManager {
     try {
       this.registry = await fetchRegistry(this.registryUrl);
     } catch (e: unknown) {
-      console.warn(`SBE Apstore: не удалось загрузить реестр ${this.registryUrl}:`, errorMessage(e));
+      console.warn(`ЦУП: не удалось загрузить реестр ${this.registryUrl}:`, errorMessage(e));
       this.registry = null;
       this.cards = [];
       return;
@@ -77,7 +77,7 @@ export class StoreManager {
       try {
         remote = await fetchRemoteManifest(entry);
       } catch (e: unknown) {
-        console.warn(`SBE Apstore: не удалось получить манифест «${entry.id}»:`, errorMessage(e));
+        console.warn(`ЦУП: не удалось получить манифест «${entry.id}»:`, errorMessage(e));
       }
       cards.push({ entry, local, remote, state: computeState(entry, local, remote) });
     }
@@ -150,7 +150,7 @@ export class StoreManager {
         await this.apply(card.entry.id, false);
         updated.push(card.entry.id);
       } catch (e: unknown) {
-        console.error(`SBE Apstore: обновление «${card.entry.id}» не удалось:`, errorMessage(e));
+        console.error(`ЦУП: обновление «${card.entry.id}» не удалось:`, errorMessage(e));
         failed.push(card.entry.id);
       }
     }

@@ -1,9 +1,9 @@
-# specification.md — sbe-apstore (SBE Apstore)
+# specification.md — sbe-apstore (ЦУП СБЕ ПМиПИР)
 
 ## 1. Идентификация
 
 - `manifest.id`: `sbe-apstore`
-- Имя: SBE Apstore
+- Имя: ЦУП СБЕ ПМиПИР (центр управления плагинами СБЕ ПМиПИР)
 - Автор: Полищук Евгений (polishchuk@tn.ru)
 - Зависимости: **runtime** — нет (потребляет GitHub raw и мост `window.SBE`); **build** — `sbe-core`.
 
