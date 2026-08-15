@@ -206,13 +206,15 @@ export class ApstoreView extends ItemView {
     for (const p of installed) {
       const row = tbody.createEl('tr');
       const nameCell = row.createEl('td');
-      nameCell.createSpan({ text: p.name });
       if (p.hasView) {
-        const openBtn = nameCell.createEl('button', {
-          cls: 'tn-btn tn-btn-ghost tn-btn-sm',
-          text: 'Открыть',
+        const nameBtn = nameCell.createEl('button', {
+          cls: 'tn-btn tn-btn-link',
+          text: p.name,
+          attr: { title: 'Открыть' },
         });
-        openBtn.addEventListener('click', () => void this.openPlugin(p));
+        nameBtn.addEventListener('click', () => void this.openPlugin(p));
+      } else {
+        nameCell.createSpan({ text: p.name });
       }
       row.createEl('td', { text: p.id });
       row.createEl('td', { text: `v${p.version}` });
