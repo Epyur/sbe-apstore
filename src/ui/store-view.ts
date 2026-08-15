@@ -89,9 +89,9 @@ export class ApstoreView extends ItemView {
     }
   }
 
-  /** Вкладка «Пользовательские приложения»: только плагины с открываемым UI (hasView). */
+  /** Вкладка «Пользовательские приложения»: только фактически установленные плагины с открываемым UI (hasView). */
   private renderApps(): void {
-    const cards = this.manager.getCards().filter(c => c.entry.hasView);
+    const cards = this.manager.getCards().filter(c => c.entry.hasView && c.local);
     const card = this.bodyEl.createDiv({ cls: 'tn-card' });
     card.createDiv({ cls: 'tn-card-head' })
       .createEl('h3', { text: 'Пользовательские приложения' });
@@ -173,33 +173,25 @@ export class ApstoreView extends ItemView {
 
     const actions = el.createDiv({ cls: 'tn-plugin-actions' });
 
-    if (card.state === 'not-installed') {
-      const installBtn = document.createElement('button');
-      installBtn.className = 'tn-btn tn-btn-primary';
-      installBtn.setText('Установить');
-      installBtn.addEventListener('click', () => void this.install(card, false));
-      actions.append(installBtn);
-    } else {
-      const openBtn = document.createElement('button');
-      openBtn.className = 'tn-btn tn-btn-primary';
-      openBtn.setText('Открыть');
-      openBtn.addEventListener('click', () => void this.openPlugin({
-        id: card.entry.id,
-        dir: card.entry.dir,
-        name: card.local?.name || card.entry.name,
-        version: card.local?.version || '',
-        description: card.local?.description,
-        hasView: true,
-      }));
-      actions.append(openBtn);
+    const openBtn = document.createElement('button');
+    openBtn.className = 'tn-btn tn-btn-primary';
+    openBtn.setText('Открыть');
+    openBtn.addEventListener('click', () => void this.openPlugin({
+      id: card.entry.id,
+      dir: card.entry.dir,
+      name: card.local?.name || card.entry.name,
+      version: card.local?.version || '',
+      description: card.local?.description,
+      hasView: true,
+    }));
+    actions.append(openBtn);
 
-      if (card.state === 'update-available' && card.local && card.remote) {
-        const updateBtn = document.createElement('button');
-        updateBtn.className = 'tn-btn tn-btn-ghost';
-        updateBtn.setText(`Обновить: v${card.local.version} → v${card.remote.version}`);
-        updateBtn.addEventListener('click', () => void this.install(card, true));
-        actions.append(updateBtn);
-      }
+    if (card.state === 'update-available' && card.local && card.remote) {
+      const updateBtn = document.createElement('button');
+      updateBtn.className = 'tn-btn tn-btn-ghost';
+      updateBtn.setText(`Обновить: v${card.local.version} → v${card.remote.version}`);
+      updateBtn.addEventListener('click', () => void this.install(card, true));
+      actions.append(updateBtn);
     }
 
     return el;

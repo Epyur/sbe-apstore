@@ -1,6 +1,6 @@
 {
   "name": "sbe-apstore",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "ЦУП СБЕ ПМиПИР — центр управления плагинами компании",
   "main": "main.js",
   "scripts": {

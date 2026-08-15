@@ -13,10 +13,9 @@ import type {
 } from '../../../sbe-core/src/types';
 
 function computeState(entry: RegistryPluginEntry, local: RemoteManifest | null, remote: RemoteManifest | null): PluginState {
-  if (entry.required) return 'required';
   if (!local) return 'not-installed';
   if (remote && isNewer(remote.version, local.version)) return 'update-available';
-  return 'installed';
+  return entry.required ? 'required' : 'installed';
 }
 
 /**
