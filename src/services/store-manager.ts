@@ -98,6 +98,7 @@ export class StoreManager {
         name: c.local?.name || c.entry.name,
         version: c.local?.version || '',
         description: c.local?.description,
+        hasView: !!c.entry.hasView,
       }));
   }
 

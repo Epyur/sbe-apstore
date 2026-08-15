@@ -1,7 +1,8 @@
 import { ItemView, WorkspaceLeaf, Notice } from 'obsidian';
 import { StoreManager } from '../services/store-manager';
+import { getService, isOpenable } from '../../../sbe-core/src/bridge';
 import { errorMessage } from '../../../sbe-core/src/utils/errors';
-import type { PluginCard } from '../../../sbe-core/src/types';
+import type { InstalledPlugin, PluginCard } from '../../../sbe-core/src/types';
 
 export const APSTORE_VIEW_TYPE = 'sbe-apstore-view';
 
@@ -190,7 +191,7 @@ export class ApstoreView extends ItemView {
     const table = wrap.createEl('table', { cls: 'tn-table' });
     const thead = table.createEl('thead');
     const headRow = thead.createEl('tr');
-    for (const th of ['Плагин', 'ID', 'Версия', 'Описание']) {
+    for (const th of ['Плагин', 'ID', 'Версия', 'Описание', '']) {
       headRow.createEl('th', { text: th });
     }
     const tbody = table.createEl('tbody');
@@ -200,12 +201,33 @@ export class ApstoreView extends ItemView {
       row.createEl('td', { text: p.id });
       row.createEl('td', { text: `v${p.version}` });
       row.createEl('td', { text: p.description || '—' });
+      const actionCell = row.createEl('td');
+      if (p.hasView) {
+        const openBtn = actionCell.createEl('button', { cls: 'tn-btn tn-btn-ghost', text: 'Открыть' });
+        openBtn.addEventListener('click', () => void this.openPlugin(p));
+      } else {
+        actionCell.setText('—');
+      }
     }
     if (installed.length === 0) {
       tbody.createEl('tr').createEl('td', {
         cls: 'tn-empty',
         text: 'Установленных плагинов из реестра нет',
-      }).colSpan = 4;
+      }).colSpan = 5;
+    }
+  }
+
+  /** Открывает UI плагина (hasView) через его опубликованный сервис. */
+  private async openPlugin(p: InstalledPlugin): Promise<void> {
+    try {
+      const service = await getService(p.id as keyof import('../../../sbe-core/src/types').SbeServiceMap);
+      if (!isOpenable(service)) {
+        new Notice(`SBE Apstore: у плагина «${p.name}» нет открываемого UI`);
+        return;
+      }
+      await service.open();
+    } catch (e: unknown) {
+      new Notice(`SBE Apstore: ${errorMessage(e)}`);
     }
   }
 
