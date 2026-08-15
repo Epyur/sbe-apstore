@@ -21,6 +21,15 @@
 
 ## История работ
 
+### 2026-08-15 — v0.2.3 (кэш-бастер реестра)
+- `sbe-core/src/registry.ts`: `fetchJson` добавляет к запросу параметр `_t=Date.now()` —
+  `requestUrl` в Obsidian отдавал закэшированный старый `registry.json` (ETag/
+  `max-age=300`), из-за чего новый плагин не появлялся в магазине при обновлении
+  реестра. Теперь каждый запрос уникальный (реестр и удалённые манифесты).
+- Пересборка `main.js`; исходники apstore не менялись.
+- `npx tsc --noEmit` EXIT=0; `npm run build` OK.
+- Версия 0.2.2 → **0.2.3** (manifest + package.json).
+
 ### 2026-08-15 — v0.2.2 (sbe-tasks)
 - Пересборка `main.js` после расширения sbe-core (`SbeYougileApi.client`,
   `SbeTasksApi`). Исходники не менялись.
