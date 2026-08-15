@@ -1,7 +1,7 @@
 {
   "id": "sbe-apstore",
   "name": "SBE Apstore",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minAppVersion": "1.11.4",
   "description": "Магазин плагинов компании: реестр, установка и обновления.",
   "author": "Полищук Евгений (polishchuk@tn.ru)",
