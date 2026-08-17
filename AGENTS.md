@@ -21,6 +21,20 @@
 
 ## История работ
 
+### 2026-08-17 — v0.3.0 (блок «Доступ к серверу», SbeAuthApi)
+- **sbe-core**: в `SbeApstoreApi` добавлен подсервис `auth: SbeAuthApi`; новые типы
+  `DeviceInfo`, `SbeAuthApi`; в `RegistryPluginEntry` добавлено поле `ownerEmail`.
+- **ЦУП**: новый клиент `src/services/auth-service.ts` (`AuthService`) — requestKey /
+  activateKey / getToken / listDevices / revokeDevice через `requestUrl` + клиентский
+  таймаут 15 с; JWT кэшируется до истечения (`expires_at`); при 401/403 ключ очищается
+  (secretStorage) и выдаётся понятная ошибка.
+- `deviceId` (UUID v4) генерируется один раз и хранится в `data.json`; ключ доступа —
+  в secretStorage Obsidian (стабильный секрет `sbe-auth-key`, перезаписывается).
+- Настройки: блок «Доступ к серверу» (apiUrl, email, «Получить ключ», «Активировать»,
+  статус, список устройств с отзывом) + блок «Реестр плагинов» (как раньше).
+- Версия 0.2.5 → **0.3.0** (manifest + package.json). `npx tsc --noEmit` EXIT=0, `npm run build` OK.
+- Проверка E2E в Obsidian (цикл request → email → activate → token) — вручную, см. specification.md.
+
 ### 2026-08-15 — v0.2.5 (шестерёнка настроек)
 - В карточке вкладки «Пользовательские приложения» добавлена кнопка «⚙» —
   открывает настройки плагина через недокументированное API

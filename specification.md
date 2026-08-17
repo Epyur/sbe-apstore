@@ -14,7 +14,17 @@
 | GET | `https://raw.githubusercontent.com/Epyur/sbe-apstore-registry/main/registry.json` | Реестр плагинов (`RegistryData`, кэшируется) |
 | GET | `https://raw.githubusercontent.com/Epyur/{repo}/main/{manifest.json\|main.js\|styles.css}` | Файлы устанавливаемого/обновляемого плагина |
 
-Запросы через `requestUrl` (не `fetch`). Реестр-URL настраивается в settings (`registryUrl`).
+### Авторизация (auth-service, `apiUrl` в настройках, по умолчанию `https://epyur.fvds.ru`)
+
+| Метод | URL | Назначение |
+|---|---|---|
+| POST | `{apiUrl}/auth/request-key` | `{email, device_id}` → ключ на email |
+| POST | `{apiUrl}/auth/activate-key` | `{email, device_id, key}` → активация |
+| POST | `{apiUrl}/auth/token` | `{key, app_id}` → JWT (кэшируется до истечения) |
+| GET | `{apiUrl}/auth/devices` | список устройств (Bearer `<key>`) |
+| DELETE | `{apiUrl}/auth/devices/{device_id}` | отзыв устройства (Bearer `<key>`) |
+
+Запросы через `requestUrl` (не `fetch`), клиентский таймаут 15 с. Реестр-URL настраивается в settings (`registryUrl`).
 
 ## 3. Публикуемый сервис (мост `window.SBE`)
 
@@ -29,6 +39,21 @@
 | `updateAll` | `() => Promise<UpdateSummary>` | Обновить все доступные |
 | `checkUpdates` | `() => Promise<UpdateSummary>` | Проверка без применения |
 | `listInstalled` | `() => InstalledPlugin[]` | Список установленных плагинов |
+| `auth` | `SbeAuthApi` | Серверная авторизация (ключ + JWT), см. ниже |
+
+### Подсервис `auth` (тип `SbeAuthApi` в sbe-core)
+
+| Метод | Сигнатура | Описание |
+|---|---|---|
+| `getStatus` | `() => { authorized: boolean; email?: string }` | Авторизован ли ключ для текущего email |
+| `requestKey` | `(email: string) => Promise<void>` | Шаг 2: ключ на email |
+| `activateKey` | `(key: string) => Promise<void>` | Шаг 4: активация + сохранение в secretStorage |
+| `getToken` | `(appId: string) => Promise<string>` | Шаг 5: JWT для plugin-service (кэш до истечения) |
+| `listDevices` | `() => Promise<DeviceInfo[]>` | Список устройств владельца |
+| `revokeDevice` | `(deviceId: string) => Promise<void>` | Отзыв устройства (своё — снимает и ключ) |
+
+Ключ хранится в secretStorage Obsidian (стабильный секрет `sbe-auth-key`); `deviceId` — UUID в `data.json`.
+При 401/403 ключ очищается и выдаётся понятная ошибка.
 
 ## 4. Установка/обновление (механика)
 
@@ -44,11 +69,15 @@
 ```ts
 {
   "registryUrl": "https://raw.githubusercontent.com/Epyur/sbe-apstore-registry/main/registry.json",
-  "lastCheckAt": 0
+  "lastCheckAt": 0,
+  "apiUrl": "https://epyur.fvds.ru",
+  "email": "user@tn.ru",
+  "deviceId": "uuid-v4 (генерируется один раз при первом запуске)"
 }
 ```
 
-`data.json` исключён из git (`.gitignore`).
+`data.json` исключён из git (`.gitignore`). `deviceId` генерируется автоматически (UUID v4),
+если отсутствует. Email вводит пользователь в настройках.
 
 ## 6. Ошибки
 

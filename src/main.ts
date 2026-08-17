@@ -2,6 +2,7 @@ import { Plugin, Notice } from 'obsidian';
 import { APSTORE_VIEW_TYPE, ApstoreView } from './ui/store-view';
 import { ApstoreSettingsTab } from './ui/settings-tab';
 import { StoreManager } from './services/store-manager';
+import { AuthService } from './services/auth-service';
 import { publishService, unpublishService } from '../../sbe-core/src/bridge';
 import { DEFAULT_REGISTRY_URL } from '../../sbe-core/src/registry';
 import { errorMessage } from '../../sbe-core/src/utils/errors';
@@ -12,25 +13,56 @@ import type {
   UpdateSummary,
 } from '../../sbe-core/src/types';
 
+/** Стабильный ID секрета: ключ доступа к серверу (перезаписывается, не плодится). */
+export const AUTH_KEY_SECRET = 'sbe-auth-key';
+
 export interface ApstoreSettings {
   registryUrl: string;
   lastCheckAt: number;
+  /** Адрес серверного auth-service (база URL, например https://epyur.fvds.ru). */
+  apiUrl: string;
+  /** Email пользователя @tn.ru для доступа к серверу. */
+  email: string;
+  /** UUID устройства — генерируется один раз при первом запуске. */
+  deviceId: string;
 }
 
 const DEFAULT_SETTINGS: ApstoreSettings = {
   registryUrl: DEFAULT_REGISTRY_URL,
   lastCheckAt: 0,
+  apiUrl: 'https://epyur.fvds.ru',
+  email: '',
+  deviceId: '',
 };
+
+function generateDeviceId(): string {
+  const cryptoApi = window.crypto;
+  if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
+    return cryptoApi.randomUUID();
+  }
+  const hex = '0123456789abcdef';
+  let s = '';
+  for (let i = 0; i < 36; i++) {
+    const r = Math.floor(Math.random() * 16);
+    if (i === 8 || i === 13 || i === 18 || i === 23) s += '-';
+    else if (i === 14) s += '4';
+    else if (i === 19) s += hex[(r & 0x3) | 0x8];
+    else s += hex[r];
+  }
+  return s;
+}
 
 export default class SbeApstorePlugin extends Plugin {
   settings!: ApstoreSettings;
   manager!: StoreManager;
+  auth!: AuthService;
 
   async onload(): Promise<void> {
     await this.loadSettings();
 
     this.manager = new StoreManager(this.app);
     this.manager.setRegistryUrl(this.settings.registryUrl);
+    this.auth = this.buildAuthService();
 
     this.registerView(APSTORE_VIEW_TYPE, leaf => new ApstoreView(leaf, this.manager));
 
@@ -73,10 +105,62 @@ export default class SbeApstorePlugin extends Plugin {
   async loadSettings(): Promise<void> {
     const data = (await this.loadData() as Partial<ApstoreSettings>) || {};
     this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+    if (!this.settings.deviceId) {
+      this.settings.deviceId = generateDeviceId();
+      await this.saveSettings();
+    }
   }
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+    if (this.auth) {
+      this.auth.setConfig({
+        apiUrl: this.settings.apiUrl,
+        email: this.settings.email,
+        deviceId: this.settings.deviceId,
+      });
+    }
+  }
+
+  getSecretValue(secretName: string): string | null {
+    try {
+      const value = this.app.secretStorage?.getSecret(secretName) ?? null;
+      return value && value.trim() ? value : null;
+    } catch (e: unknown) {
+      console.error('ЦУП: не удалось прочитать секрет:', errorMessage(e));
+      return null;
+    }
+  }
+
+  saveSecret(secretName: string, value: string): void {
+    try {
+      this.app.secretStorage?.setSecret(secretName, value);
+    } catch (e: unknown) {
+      console.error('ЦУП: не удалось сохранить секрет:', errorMessage(e));
+    }
+  }
+
+  clearSecret(secretName: string): void {
+    try {
+      this.app.secretStorage?.setSecret(secretName, '');
+    } catch (e: unknown) {
+      console.error('ЦУП: не удалось очистить секрет:', errorMessage(e));
+    }
+  }
+
+  private buildAuthService(): AuthService {
+    return new AuthService(
+      {
+        apiUrl: this.settings.apiUrl,
+        email: this.settings.email,
+        deviceId: this.settings.deviceId,
+      },
+      {
+        getKey: () => this.getSecretValue(AUTH_KEY_SECRET),
+        setKey: (value) => this.saveSecret(AUTH_KEY_SECRET, value),
+        clearKey: () => this.clearSecret(AUTH_KEY_SECRET),
+      },
+    );
   }
 
   async activateView(): Promise<void> {
@@ -132,6 +216,20 @@ export default class SbeApstorePlugin extends Plugin {
       updateAll: async () => this.manager.updateAll(),
       checkUpdates: async () => this.manager.checkUpdates(),
       listInstalled: (): InstalledPlugin[] => this.manager.listInstalled(),
+      auth: {
+        getStatus: () => this.auth.getStatus(),
+        requestKey: async (email: string) => {
+          await this.auth.requestKey(email);
+        },
+        activateKey: async (key: string) => {
+          await this.auth.activateKey(key);
+        },
+        getToken: async (appId: string) => this.auth.getToken(appId),
+        listDevices: async () => this.auth.listDevices(),
+        revokeDevice: async (deviceId: string) => {
+          await this.auth.revokeDevice(deviceId);
+        },
+      },
     };
   }
 }
