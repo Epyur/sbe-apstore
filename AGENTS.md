@@ -21,6 +21,14 @@
 
 ## История работ
 
+### 2026-08-17 — v0.3.1 (источник реестра)
+- `sbe-core`: `DEFAULT_REGISTRY_URL` → `https://epyur.fvds.ru/registry.json`
+  (raw.githubusercontent.com отдавал 429 Too Many Requests, реестр в ЦУП пропадал;
+  реестр теперь отдаёт наш Caddy, файл — `/opt/mailers/www/registry.json`).
+- `data.json`: `registryUrl` → `https://epyur.fvds.ru/registry.json`.
+- Пересборка `main.js`. Версия 0.3.0 → **0.3.1** (manifest + package.json).
+- `npx tsc --noEmit` EXIT=0; `npm run build` OK.
+
 ### 2026-08-17 — v0.3.0 (блок «Доступ к серверу», SbeAuthApi)
 - **sbe-core**: в `SbeApstoreApi` добавлен подсервис `auth: SbeAuthApi`; новые типы
   `DeviceInfo`, `SbeAuthApi`; в `RegistryPluginEntry` добавлено поле `ownerEmail`.
