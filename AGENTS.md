@@ -21,6 +21,19 @@
 
 ## История работ
 
+### 2026-08-20 — v0.3.4 (пересборка за sbe-core: SbeContactsApi)
+- `sbe-core`: добавлены `SbeContactsApi` и `'sbe-contacts'` в `SbeServiceMap` — пересборка `main.js`, исходники плагина не менялись. Версия 0.3.3 → **0.3.4** (manifest + package.json).
+- `npx tsc --noEmit` EXIT=0; `npm run build` OK.
+
+### 2026-08-18 — v0.3.3 (пересборка за sbe-core: sbe-lims в service-map)
+- `sbe-core`: добавлены `SbeLimsApi` и `'sbe-lims'` в `SbeServiceMap` — пересборка `main.js`,
+  исходники плагина не менялись. Версия 0.3.2 → **0.3.3** (manifest + package.json).
+- `npx tsc --noEmit` EXIT=0; `npm run build` OK. Коммит и пуш сделаны.
+
+### 2026-08-18 — v0.3.2 (пересборка за sbe-core: SbeEknApi)
+- `sbe-core`: добавлены `SbeEknApi` и `'sbe-ekn'` в `SbeServiceMap` — пересборка `main.js`,
+  исходники плагина не менялись. Версия 0.3.1 → **0.3.2** (manifest + package.json).
+
 ### 2026-08-17 — v0.3.1 (источник реестра)
 - `sbe-core`: `DEFAULT_REGISTRY_URL` → `https://epyur.fvds.ru/registry.json`
   (raw.githubusercontent.com отдавал 429 Too Many Requests, реестр в ЦУП пропадал;
