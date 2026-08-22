@@ -21,6 +21,28 @@
 
 ## История работ
 
+### 2026-08-22 — v0.3.5 (индикатор онлайна + канал «Новости»)
+- Устранён баг «ошибка при отвязке устройства»: несовпадение camelCase/snake_case в
+  `listDevices()` оставляло `deviceId` пустым — на сервер уходил буквальный `"undefined"`,
+  Postgres отвергал его как невалидный UUID → 500. Фикс на клиенте (маппинг полей) +
+  на сервере (`handleRevokeDevice` теперь проверяет формат UUID и отвечает 400).
+- Две иконки над таблицей (`store-view.ts`, `renderHeader()`): `🟢 Онлайн` → `PresenceModal`
+  (кто подключён — активность синхронизации за 30 мин; администратору сервер дополнительно
+  отдаёт last-seen по всем пользователям), `📰 Новости` → `NewsModal` (список сообщений,
+  «✔ Прочитано», для админа — форма публикации + «Кто прочитал»).
+- `src/services/auth-service.ts`: новые методы `getPresence`/`listNews`/`createNews`/`ackNews`/
+  `getNewsReads` через новый приватный `authorizedRequest()` (в отличие от старого `authorized()`
+  не сбрасывает ключ на 403 — здесь 403 значит «не admin», а не «ключ недействителен»).
+- `src/main.ts`: при старте (после `checkUpdates`) — `checkMandatoryNews()`, открывает
+  `MandatoryNewsModal` для первого непрочитанного `mandatory`-сообщения; `announceUpdate()`
+  добавлен в `buildApi()` (шлёт `POST /auth/news` с `visibility:'all', mandatory:false`).
+- `sbe-core`: `SbeAuthApi`/`SbeApstoreApi` — новые методы и типы (см. `sbe-core/AGENTS.md`
+  2026-08-22). Только этот плагин реализует/бампается — остальные SBE-плагины не тронуты
+  (политика 2026-08-20: аддитивные изменения sbe-core не требуют пересборки потребителей).
+- Backend: `server_back/auth-service` — новые таблицы/роуты, см. его собственный `AGENTS.md`.
+  Деплой на VDS и значение `ADMIN_EMAILS` — отдельным подтверждённым шагом.
+- Версия 0.3.4 → **0.3.5** (manifest + package.json). `npx tsc --noEmit` EXIT=0; `npm run build` OK.
+
 ### 2026-08-20 — v0.3.4 (пересборка за sbe-core: SbeContactsApi)
 - `sbe-core`: добавлены `SbeContactsApi` и `'sbe-contacts'` в `SbeServiceMap` — пересборка `main.js`, исходники плагина не менялись. Версия 0.3.3 → **0.3.4** (manifest + package.json).
 - `npx tsc --noEmit` EXIT=0; `npm run build` OK.

@@ -1,5 +1,8 @@
 import { ItemView, WorkspaceLeaf, Notice } from 'obsidian';
 import { StoreManager } from '../services/store-manager';
+import type { AuthService } from '../services/auth-service';
+import { PresenceModal } from './presence-modal';
+import { NewsModal } from './news-modal';
 import { getService, isOpenable } from '../../../sbe-core/src/bridge';
 import { errorMessage } from '../../../sbe-core/src/utils/errors';
 import type { InstalledPlugin, PluginCard } from '../../../sbe-core/src/types';
@@ -17,14 +20,16 @@ const TABS: Array<{ id: Tab; label: string }> = [
 
 export class ApstoreView extends ItemView {
   private manager: StoreManager;
+  private auth: AuthService;
   private tab: Tab = 'apps';
   private navEl!: HTMLElement;
   private bodyEl!: HTMLElement;
   private busy = false;
 
-  constructor(leaf: WorkspaceLeaf, manager: StoreManager) {
+  constructor(leaf: WorkspaceLeaf, manager: StoreManager, auth: AuthService) {
     super(leaf);
     this.manager = manager;
+    this.auth = auth;
   }
 
   getViewType(): string {
@@ -42,6 +47,7 @@ export class ApstoreView extends ItemView {
   async onOpen(): Promise<void> {
     this.contentEl.empty();
     this.contentEl.addClass('sbe-apstore');
+    this.renderHeader();
     this.renderNav();
     this.bodyEl = this.contentEl.createDiv();
     this.bodyEl.createDiv({ cls: 'tn-empty', text: 'Загрузка…' });
@@ -51,6 +57,25 @@ export class ApstoreView extends ItemView {
 
   async onClose(): Promise<void> {
     this.contentEl.empty();
+  }
+
+  /** Иконки над таблицей: кто онлайн, канал «Новости» (обе — модалки поверх текущей вкладки). */
+  private renderHeader(): void {
+    const header = this.contentEl.createDiv({ cls: 'tn-apstore-header' });
+
+    const presenceBtn = header.createEl('button', {
+      cls: 'tn-btn tn-btn-ghost',
+      text: '🟢 Онлайн',
+      attr: { title: 'Кто сейчас подключён к ЦУП' },
+    });
+    presenceBtn.addEventListener('click', () => new PresenceModal(this.app, this.auth).open());
+
+    const newsBtn = header.createEl('button', {
+      cls: 'tn-btn tn-btn-ghost',
+      text: '📰 Новости',
+      attr: { title: 'Сообщения от администрации и об обновлениях плагинов' },
+    });
+    newsBtn.addEventListener('click', () => new NewsModal(this.app, this.auth).open());
   }
 
   private renderNav(): void {

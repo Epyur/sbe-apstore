@@ -1,12 +1,14 @@
 import { Plugin, Notice } from 'obsidian';
 import { APSTORE_VIEW_TYPE, ApstoreView } from './ui/store-view';
 import { ApstoreSettingsTab } from './ui/settings-tab';
+import { MandatoryNewsModal } from './ui/news-modal';
 import { StoreManager } from './services/store-manager';
 import { AuthService } from './services/auth-service';
 import { publishService, unpublishService } from '../../sbe-core/src/bridge';
 import { DEFAULT_REGISTRY_URL } from '../../sbe-core/src/registry';
 import { errorMessage } from '../../sbe-core/src/utils/errors';
 import type {
+  AnnounceUpdateInput,
   InstalledPlugin,
   PluginState,
   SbeApstoreApi,
@@ -64,7 +66,7 @@ export default class SbeApstorePlugin extends Plugin {
     this.manager.setRegistryUrl(this.settings.registryUrl);
     this.auth = this.buildAuthService();
 
-    this.registerView(APSTORE_VIEW_TYPE, leaf => new ApstoreView(leaf, this.manager));
+    this.registerView(APSTORE_VIEW_TYPE, leaf => new ApstoreView(leaf, this.manager, this.auth));
 
     this.addRibbonIcon('brain', 'ЦУП СБЕ ПМиПИР', () => {
       void this.activateView();
@@ -94,6 +96,7 @@ export default class SbeApstorePlugin extends Plugin {
 
     this.app.workspace.onLayoutReady(() => {
       void this.checkUpdates(true);
+      void this.checkMandatoryNews();
     });
   }
 
@@ -203,6 +206,22 @@ export default class SbeApstorePlugin extends Plugin {
     }
   }
 
+  /** При старте (после checkUpdates) ищет первое непрочитанное "обязательное"
+   *  сообщение и открывает его модалкой — тихо, без Notice при ошибке/незалогиненности
+   *  (та же логика уместна и до того, как пользователь впервые ввёл email/ключ). */
+  private async checkMandatoryNews(): Promise<void> {
+    if (!this.auth.getStatus().authorized) return;
+    try {
+      const items = await this.auth.listNews();
+      const pending = items.find(n => n.mandatory && !n.read);
+      if (pending) {
+        new MandatoryNewsModal(this.app, this.auth, pending, () => undefined).open();
+      }
+    } catch (e: unknown) {
+      console.warn('ЦУП: проверка обязательных новостей не удалась:', errorMessage(e));
+    }
+  }
+
   private buildApi(): SbeApstoreApi {
     return {
       getRegistry: async () => this.manager.getRegistry(),
@@ -229,6 +248,21 @@ export default class SbeApstorePlugin extends Plugin {
         revokeDevice: async (deviceId: string) => {
           await this.auth.revokeDevice(deviceId);
         },
+        getPresence: async () => this.auth.getPresence(),
+        listNews: async () => this.auth.listNews(),
+        createNews: async (input) => this.auth.createNews(input),
+        ackNews: async (id: number) => {
+          await this.auth.ackNews(id);
+        },
+        getNewsReads: async (id: number) => this.auth.getNewsReads(id),
+      },
+      announceUpdate: async (input: AnnounceUpdateInput) => {
+        await this.auth.createNews({
+          title: `Обновление: ${input.appName} → v${input.version}`,
+          body: input.summary,
+          visibility: 'all',
+          mandatory: false,
+        });
       },
     };
   }

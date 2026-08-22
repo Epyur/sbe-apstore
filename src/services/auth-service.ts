@@ -1,6 +1,12 @@
 import { requestUrl, RequestUrlParam } from 'obsidian';
 import { errorMessage } from '../../../sbe-core/src/utils/errors';
-import type { DeviceInfo } from '../../../sbe-core/src/types';
+import type {
+  CreateNewsInput,
+  DeviceInfo,
+  NewsItem,
+  NewsReadStatus,
+  PresenceInfo,
+} from '../../../sbe-core/src/types';
 
 export interface AuthServiceConfig {
   apiUrl: string;
@@ -89,8 +95,21 @@ export class AuthService {
 
   async listDevices(): Promise<DeviceInfo[]> {
     const res = await this.authorized('/auth/devices');
-    const data = JSON.parse(res.text) as { devices?: DeviceInfo[] };
-    return data.devices ?? [];
+    // Сервер отдаёт snake_case (device_id/created_at/key_status) — раньше здесь
+    // был прямой каст без переименования полей, из-за чего deviceId/createdAt/
+    // keyStatus всегда оказывались undefined (совпадало только "label"). UI
+    // показывал "-"/"-" вместо статуса/даты, а кнопка "Отозвать" отправляла на
+    // сервер device_id="undefined" (строкой) — Postgres отвергал его как
+    // невалидный UUID, что и давало ошибку 500 при попытке отвязать устройство
+    // (обнаружено пользователем, 2026-08-22).
+    type RawDevice = { device_id?: string; label?: string; created_at?: string; key_status?: string };
+    const data = JSON.parse(res.text) as { devices?: RawDevice[] };
+    return (data.devices ?? []).map((d) => ({
+      deviceId: d.device_id ?? '',
+      label: d.label ?? '',
+      createdAt: d.created_at ?? '',
+      keyStatus: d.key_status ?? '',
+    }));
   }
 
   async revokeDevice(deviceId: string): Promise<void> {
@@ -109,6 +128,102 @@ export class AuthService {
       this.secrets.clearKey();
       this.tokenCache.clear();
     }
+  }
+
+  async getPresence(): Promise<PresenceInfo> {
+    const res = await this.authorizedRequest('GET', '/auth/presence');
+    type Raw = {
+      online?: string[];
+      is_admin?: boolean;
+      all_users?: Array<{ email: string; last_seen_at: string | null }>;
+    };
+    const data = JSON.parse(res.text) as Raw;
+    return {
+      online: data.online ?? [],
+      isAdmin: data.is_admin ?? false,
+      ...(data.all_users
+        ? { allUsers: data.all_users.map((u) => ({ email: u.email, lastSeenAt: u.last_seen_at ?? null })) }
+        : {}),
+    };
+  }
+
+  async listNews(): Promise<NewsItem[]> {
+    const res = await this.authorizedRequest('GET', '/auth/news');
+    type RawNews = {
+      id: number;
+      author_email: string;
+      title: string;
+      body: string;
+      visibility: 'all' | 'restricted';
+      mandatory: boolean;
+      created_at: string;
+      read: boolean;
+    };
+    const data = JSON.parse(res.text) as { news?: RawNews[] };
+    return (data.news ?? []).map((n) => ({
+      id: n.id,
+      authorEmail: n.author_email,
+      title: n.title,
+      body: n.body,
+      visibility: n.visibility,
+      mandatory: n.mandatory,
+      createdAt: n.created_at,
+      read: n.read,
+    }));
+  }
+
+  async createNews(input: CreateNewsInput): Promise<{ id: number }> {
+    const res = await this.authorizedRequest('POST', '/auth/news', {
+      title: input.title,
+      body: input.body,
+      visibility: input.visibility,
+      recipients: input.recipients ?? [],
+      mandatory: input.mandatory,
+    });
+    const data = JSON.parse(res.text) as { id: number };
+    return { id: data.id };
+  }
+
+  async ackNews(id: number): Promise<void> {
+    await this.authorizedRequest('POST', `/auth/news/${id}/ack`);
+  }
+
+  async getNewsReads(id: number): Promise<NewsReadStatus[]> {
+    const res = await this.authorizedRequest('GET', `/auth/news/${id}/reads`);
+    type RawRead = { email: string; read: boolean; read_at?: string };
+    const data = JSON.parse(res.text) as { reads?: RawRead[] };
+    return (data.reads ?? []).map((r) => ({ email: r.email, read: r.read, readAt: r.read_at }));
+  }
+
+  /** Как authorized(), но 403 здесь означает не «ключ недействителен», а
+   *  «недостаточно прав» (эндпоинты /auth/presence и /auth/news идут через тот
+   *  же requireKey, который отдаёт 401 на плохой ключ; 403 — только от
+   *  admin-проверки внутри самого хендлера) — поэтому ключ не сбрасываем. */
+  private async authorizedRequest(
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<{ status: number; text: string }> {
+    const key = this.requireKey();
+    const headers: Record<string, string> = { Authorization: `Bearer ${key}` };
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    const res = await this.request({
+      url: `${this.baseUrl}${path}`,
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    if (res.status === 401) {
+      this.invalidateKey(res);
+      throw new Error(this.errorText(res) || 'Ключ недействителен. Запросите новый ключ.');
+    }
+    if (res.status === 403) {
+      throw new Error(this.errorText(res) || 'Недостаточно прав');
+    }
+    if (res.status < 200 || res.status >= 300) {
+      throw new Error(this.errorText(res) || `HTTP ${res.status}`);
+    }
+    return res;
   }
 
   private requireKey(): string {
