@@ -21,6 +21,26 @@
 
 ## История работ
 
+### 2026-08-25 — v0.3.6 (управление секретами + динамический реестр)
+- `src/services/auth-service.ts`: новые методы (admin, через мастер-ключ устройства):
+  - `manageAppSecret({appId, action: 'status'|'sync'|'rotate'})` — управление
+    `service_secret` приложений (статус маскирован; sync — выровнять `apps` по env
+    сервера; rotate — новый ключ, показывается один раз);
+  - `listRegistryAdditions()` / `addRegistryPlugin(plugin)` / `removeRegistryAddition(id)`
+    — динамический реестр плагинов.
+- `src/ui/settings-tab.ts`: настройки переведены на **сворачиваемые группы** (свёрнуты
+  по умолчанию, ленивый рендер при первом раскрытии); новый раздел **«Сервисные ключи»**
+  (список всех приложений: статус / Синхронизировать / Перевыпустить) и раздел
+  **«Добавить плагин в реестр»** (форма id/название/репозиторий/ветка/owner/description +
+  список добавленного с удалением). Изменения применяются ко всем устройствам сразу
+  (общий `/registry.json` отдаётся динамически auth-service).
+- `sbe-core`: `SbeAuthApi` расширен (`manageAppSecret`, `listRegistryAdditions`,
+  `addRegistryPlugin`, `removeRegistryAddition`) + типы `ManageAppSecretInput`/
+  `ManageAppSecretResult`/`RegistryAddition`/`RegistryPluginInput`. Реализация серверной
+  части — auth-service (см. его AGENTS.md) + хост-скрипт `secret-applier.sh`.
+- Версия 0.3.5 → **0.3.6** (manifest + package.json). `npx tsc --noEmit` EXIT=0;
+  `npm run build` OK.
+
 ### 2026-08-22 — v0.3.5 (индикатор онлайна + канал «Новости»)
 - Устранён баг «ошибка при отвязке устройства»: несовпадение camelCase/snake_case в
   `listDevices()` оставляло `deviceId` пустым — на сервер уходил буквальный `"undefined"`,

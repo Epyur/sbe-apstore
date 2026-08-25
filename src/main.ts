@@ -255,6 +255,12 @@ export default class SbeApstorePlugin extends Plugin {
           await this.auth.ackNews(id);
         },
         getNewsReads: async (id: number) => this.auth.getNewsReads(id),
+        manageAppSecret: async (input) => this.auth.manageAppSecret(input),
+        listRegistryAdditions: async () => this.auth.listRegistryAdditions(),
+        addRegistryPlugin: async (plugin) => this.auth.addRegistryPlugin(plugin),
+        removeRegistryAddition: async (registryId) => {
+          await this.auth.removeRegistryAddition(registryId);
+        },
       },
       announceUpdate: async (input: AnnounceUpdateInput) => {
         await this.auth.createNews({

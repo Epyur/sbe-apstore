@@ -3,9 +3,13 @@ import { errorMessage } from '../../../sbe-core/src/utils/errors';
 import type {
   CreateNewsInput,
   DeviceInfo,
+  ManageAppSecretInput,
+  ManageAppSecretResult,
   NewsItem,
   NewsReadStatus,
   PresenceInfo,
+  RegistryAddition,
+  RegistryPluginInput,
 } from '../../../sbe-core/src/types';
 
 export interface AuthServiceConfig {
@@ -193,6 +197,61 @@ export class AuthService {
     type RawRead = { email: string; read: boolean; read_at?: string };
     const data = JSON.parse(res.text) as { reads?: RawRead[] };
     return (data.reads ?? []).map((r) => ({ email: r.email, read: r.read, readAt: r.read_at }));
+  }
+
+  /** Управление service_secret приложения (только администратор, ADMIN_EMAILS). */
+  async manageAppSecret(input: ManageAppSecretInput): Promise<ManageAppSecretResult> {
+    const q = `app_id=${encodeURIComponent(input.appId)}`;
+    if (input.action === 'status') {
+      const res = await this.authorizedRequest('GET', `/auth/apps/secret?${q}`);
+      type Raw = { app_id?: string; set?: boolean; updated_at?: string | null; pending?: boolean; pending_since?: string | null };
+      const d = JSON.parse(res.text) as Raw;
+      return {
+        appId: d.app_id ?? input.appId,
+        set: d.set ?? false,
+        updatedAt: d.updated_at ?? null,
+        pending: d.pending ?? false,
+        pendingSince: d.pending_since ?? null,
+      };
+    }
+    const res = await this.authorizedRequest('POST', '/auth/apps/secret', {
+      app_id: input.appId,
+      action: input.action,
+    });
+    type Raw = { app_id?: string; applied?: boolean; pending?: boolean; new_secret?: string };
+    const d = JSON.parse(res.text) as Raw;
+    return {
+      appId: d.app_id ?? input.appId,
+      applied: d.applied,
+      pending: d.pending,
+      newSecret: d.new_secret,
+    };
+  }
+
+  /** Динамический реестр: список добавленных администратором плагинов. */
+  async listRegistryAdditions(): Promise<RegistryAddition[]> {
+    const res = await this.authorizedRequest('GET', '/auth/registry');
+    type Raw = {
+      plugins?: Array<{ registryId?: number; createdAt?: string; plugin?: Record<string, unknown> }>;
+    };
+    const data = JSON.parse(res.text) as Raw;
+    return (data.plugins ?? []).map((p) => ({
+      registryId: p.registryId ?? 0,
+      createdAt: p.createdAt ?? '',
+      plugin: (p.plugin ?? {}) as unknown as RegistryAddition['plugin'],
+    }));
+  }
+
+  /** Динамический реестр: добавить плагин. */
+  async addRegistryPlugin(plugin: RegistryPluginInput): Promise<{ id: number }> {
+    const res = await this.authorizedRequest('POST', '/auth/registry', { plugin });
+    const data = JSON.parse(res.text) as { id?: number };
+    return { id: data.id ?? 0 };
+  }
+
+  /** Динамический реестр: удалить запись. */
+  async removeRegistryAddition(registryId: number): Promise<void> {
+    await this.authorizedRequest('DELETE', `/auth/registry/${registryId}`);
   }
 
   /** Как authorized(), но 403 здесь означает не «ключ недействителен», а

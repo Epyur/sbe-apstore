@@ -85,3 +85,68 @@
   max-height: 75vh;
   overflow-y: auto;
 }
+
+/* Центральное управление сервисными ключами (service_secret) */
+.tn-secret-app {
+  border: 1px solid var(--tn-border);
+  border-radius: var(--tn-radius);
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+
+.tn-secret-app-name {
+  font-weight: 600;
+}
+
+.tn-secret-app-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tn-secret-new {
+  margin-top: 10px;
+}
+
+.tn-secret-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-monospace);
+  margin: 6px 0;
+}
+
+.tn-apstore-mt12 {
+  margin-top: 12px;
+}
+
+/* Сворачиваемые группы настроек (свёрнуты по умолчанию) */
+.tn-collapse-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-top: 14px;
+  border: 1px solid var(--tn-border);
+  border-radius: var(--tn-radius);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tn-collapse-head:hover {
+  background: var(--background-secondary);
+}
+
+.tn-collapse-chevron {
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.tn-collapse-body {
+  padding: 6px 4px 4px;
+}
+
+.tn-collapse-body.collapsed {
+  display: none;
+}
