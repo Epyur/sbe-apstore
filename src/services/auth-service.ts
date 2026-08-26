@@ -1,6 +1,7 @@
 import { requestUrl, RequestUrlParam } from 'obsidian';
 import { errorMessage } from '../../../sbe-core/src/utils/errors';
 import type {
+  AppEnvStatus,
   CreateNewsInput,
   DeviceInfo,
   ManageAppSecretInput,
@@ -226,6 +227,32 @@ export class AuthService {
       pending: d.pending,
       newSecret: d.new_secret,
     };
+  }
+
+  /** Статус admin-управляемых env-переменных приложения (белый список — на сервере). */
+  async getAppEnvStatus(appId: string): Promise<AppEnvStatus> {
+    const res = await this.authorizedRequest('GET', `/auth/apps/env?app_id=${encodeURIComponent(appId)}`);
+    type RawKey = { key?: string; set?: boolean; updated_at?: string | null; pending?: boolean; pending_since?: string | null };
+    type Raw = { app_id?: string; keys?: RawKey[] };
+    const d = JSON.parse(res.text) as Raw;
+    return {
+      appId: d.app_id ?? appId,
+      keys: (d.keys ?? []).map((k) => ({
+        key: k.key ?? '',
+        set: k.set ?? false,
+        updatedAt: k.updated_at ?? null,
+        pending: k.pending ?? false,
+        pendingSince: k.pending_since ?? null,
+      })),
+    };
+  }
+
+  /** Ставит в очередь новые значения env-переменных приложения (только администратор). */
+  async setAppEnv(appId: string, values: Record<string, string>): Promise<{ appId: string; pending: boolean }> {
+    const res = await this.authorizedRequest('POST', '/auth/apps/env', { app_id: appId, values });
+    type Raw = { app_id?: string; pending?: boolean };
+    const d = JSON.parse(res.text) as Raw;
+    return { appId: d.app_id ?? appId, pending: d.pending ?? false };
   }
 
   /** Динамический реестр: список добавленных администратором плагинов. */

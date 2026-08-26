@@ -21,6 +21,24 @@
 
 ## История работ
 
+### 2026-08-26 — v0.3.7 (мост: getAppEnvStatus/setAppEnv — admin-управление произвольными env-переменными приложений)
+- Продолжение v0.3.6: `manageAppSecret` умел только один секрет на приложение
+  (`{APP}_SERVICE_SECRET`, генерируется сервером). Понадобился generic-канал для
+  admin-заданных значений ЛЮБЫХ разрешённых env-переменных (первый потребитель —
+  учётка почты `LAB_MAIL_*` у sbe-lims, см. его `AGENTS.md`, 2026-08-26) — новый
+  `POST/GET /auth/apps/env` на сервере (`env_admin.go`, белый список ключей на
+  приложение, см. `sbe-core/auth-service/AGENTS.md`).
+- `src/services/auth-service.ts`: `getAppEnvStatus(appId)` (статус по каждому
+  разрешённому ключу — `set`/`pending`/`updatedAt`, значение никогда не
+  возвращается) / `setAppEnv(appId, values)` (ставит в очередь, admin-only).
+- `src/main.ts`: оба метода добавлены в `auth` на мосту `window.SBE` — **любой**
+  установленный плагин может вызвать `getService('sbe-apstore').auth.setAppEnv(...)`
+  для СВОЕГО приложения (сервер сам отклонит неразрешённые ключи/чужой app_id
+  по белому списку — плагин ничего не обязан проверять сам). sbe-apstore
+  своего UI для этого не получил — секции живут в настройках плагина-потребителя
+  (sbe-lims), эта версия — чисто мост.
+- `npx tsc --noEmit`/`npm run build` — чисто. Версия 0.3.6 → **0.3.7**.
+
 ### 2026-08-25 — v0.3.6 (управление секретами + динамический реестр)
 - `src/services/auth-service.ts`: новые методы (admin, через мастер-ключ устройства):
   - `manageAppSecret({appId, action: 'status'|'sync'|'rotate'})` — управление

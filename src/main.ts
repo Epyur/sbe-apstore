@@ -256,6 +256,8 @@ export default class SbeApstorePlugin extends Plugin {
         },
         getNewsReads: async (id: number) => this.auth.getNewsReads(id),
         manageAppSecret: async (input) => this.auth.manageAppSecret(input),
+        getAppEnvStatus: async (appId: string) => this.auth.getAppEnvStatus(appId),
+        setAppEnv: async (appId: string, values: Record<string, string>) => this.auth.setAppEnv(appId, values),
         listRegistryAdditions: async () => this.auth.listRegistryAdditions(),
         addRegistryPlugin: async (plugin) => this.auth.addRegistryPlugin(plugin),
         removeRegistryAddition: async (registryId) => {
