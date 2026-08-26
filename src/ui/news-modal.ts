@@ -1,7 +1,7 @@
 import { App, Modal, Notice } from 'obsidian';
 import { errorMessage } from '../../../sbe-core/src/utils/errors';
 import type { NewsItem, NewsReadStatus } from '../../../sbe-core/src/types';
-import type { AuthService } from '../services/auth-service';
+import type { AuthService } from '../../../sbe-core/src/auth-client';
 
 interface CreateNewsFields {
   titleInput: HTMLInputElement;

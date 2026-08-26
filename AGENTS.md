@@ -6,11 +6,14 @@
 ## Структура
 
 - `src/main.ts` — `SbeApstorePlugin`: регистрирует view и ribbon, инициализирует store.
-- `src/services/store-manager.ts` — загрузка реестра (`requestUrl`, кэш `registryUrl`/`lastCheckAt` в `data.json`), установка/обновление плагинов.
 - `src/ui/store-view.ts` — вкладки «Пользовательские приложения / Магазин / Установленные / Обновления» (первая открывается по умолчанию).
 - `src/ui/settings-tab.ts` — URL реестра, проверка доступности.
 - `src/styles.css` — классы `tn-*` поверх design-системы sbe-core.
 - `manifest.json` — author: Полищук Евгений (polishchuk@tn.ru).
+- **Клиент магазина и авторизации — в sbe-core (с 2026-08-26)**: `StoreManager`
+  (`sbe-core/src/store-manager.ts`) и `AuthService` (`sbe-core/src/auth-client.ts`) —
+  общие для десктопного ЦУП и мобильного хаба `sbe-mobile`; локальные `src/services/*`
+  удалены (v0.3.9).
 
 ## Ключевые решения
 
@@ -20,6 +23,15 @@
 - Сборка: `npm run build` (esbuild + `build.onEnd` для склейки tokens/components sbe-core + собственных стилей). `npx tsc --noEmit` EXIT=0.
 
 ## История работ
+
+### 2026-08-26 — v0.3.9 (рефактор: клиент авторизации и магазин — в sbe-core)
+- `AuthService` (`src/services/auth-service.ts`) перенесён в `sbe-core/src/auth-client.ts`,
+  `StoreManager` (`src/services/store-manager.ts`) — в `sbe-core/src/store-manager.ts`
+  (общие для десктопного ЦУП и нового мобильного хаба `sbe-mobile`, см. его AGENTS.md).
+  Локальные `src/services/*` удалены, импорты обновлены (main.ts, store-view.ts,
+  news-modal.ts, presence-modal.ts). Функциональность не менялась.
+- Версия 0.3.8 → **0.3.9** (manifest + package.json). `npx tsc --noEmit` EXIT=0;
+  `npm run build` OK.
 
 ### 2026-08-26 — v0.3.8 (безопасность: белый список выдачи токенов; передача хешей целостности в установщик)
 - **B4c (ревью безопасности, `plugins/secrev.md` 3.1)**: `auth.getToken(appId)` на мосту

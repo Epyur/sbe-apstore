@@ -1,7 +1,7 @@
 import { App, Modal } from 'obsidian';
 import { errorMessage } from '../../../sbe-core/src/utils/errors';
 import type { PresenceInfo } from '../../../sbe-core/src/types';
-import type { AuthService } from '../services/auth-service';
+import type { AuthService } from '../../../sbe-core/src/auth-client';
 
 /** «Кто сейчас онлайн» — активность синхронизации за последние 30 минут.
  *  Администратору (ADMIN_EMAILS в auth-service) сервер дополнительно отдаёт

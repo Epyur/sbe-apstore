@@ -1,6 +1,6 @@
 import { ItemView, WorkspaceLeaf, Notice } from 'obsidian';
-import { StoreManager } from '../services/store-manager';
-import type { AuthService } from '../services/auth-service';
+import { StoreManager } from '../../../sbe-core/src/store-manager';
+import type { AuthService } from '../../../sbe-core/src/auth-client';
 import { PresenceModal } from './presence-modal';
 import { NewsModal } from './news-modal';
 import { getService, isOpenable } from '../../../sbe-core/src/bridge';
