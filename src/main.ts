@@ -243,7 +243,16 @@ export default class SbeApstorePlugin extends Plugin {
         activateKey: async (key: string) => {
           await this.auth.activateKey(key);
         },
-        getToken: async (appId: string) => this.auth.getToken(appId),
+        getToken: async (appId: string) => {
+          // Ревью B4: выдача токенов только для известных приложений SBE
+          // (произвольные app_id отклоняются — компрометация плагина не даёт
+          // токены на чужие сервисы).
+          const ALLOWED_TOKEN_APPS = new Set(['mailer', 'documents', 'lab', 'ekn', 'contacts', 'agent']);
+          if (!ALLOWED_TOKEN_APPS.has(appId)) {
+            throw new Error(`ЦУП: приложение «${appId}» не входит в список разрешённых для выдачи токенов.`);
+          }
+          return this.auth.getToken(appId);
+        },
         listDevices: async () => this.auth.listDevices(),
         revokeDevice: async (deviceId: string) => {
           await this.auth.revokeDevice(deviceId);
