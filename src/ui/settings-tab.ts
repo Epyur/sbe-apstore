@@ -207,14 +207,20 @@ export class ApstoreSettingsTab extends PluginSettingTab {
         return;
       }
       box.empty();
+      // Динамический список приложений из реестра (записи с `appId` — серверные
+      // плагины) + базовый `mailer`. Новый серверный плагин появляется здесь
+      // автоматически при добавлении записи в registry.json.
+      const entries = this.plugin.manager.getRegistry();
       const apps: Array<{ id: string; name: string }> = [
-        { id: 'documents', name: 'Документы' },
-        { id: 'lab', name: 'ЛИМС (заявки)' },
-        { id: 'ekn', name: 'Справочник ЕКН' },
-        { id: 'contacts', name: 'Контакты' },
-        { id: 'agent', name: 'LogicTEAM.007' },
         { id: 'mailer', name: 'Письма' },
       ];
+      const seen = new Set<string>(['mailer']);
+      for (const e of entries) {
+        if (e.appId && !seen.has(e.appId)) {
+          seen.add(e.appId);
+          apps.push({ id: e.appId, name: e.name });
+        }
+      }
       for (const app of apps) {
         const card = box.createDiv({ cls: 'tn-secret-app' });
         void this.renderSecretApp(card, app.id, app.name);
