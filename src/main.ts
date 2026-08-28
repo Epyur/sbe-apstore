@@ -270,12 +270,21 @@ export default class SbeApstorePlugin extends Plugin {
           await this.auth.activateKey(key);
         },
         getToken: async (appId: string) => {
-          // Ревью B4: выдача токенов только для известных приложений SBE
-          // (произвольные app_id отклоняются — компрометация плагина не даёт
-          // токены на чужие сервисы).
-          const ALLOWED_TOKEN_APPS = new Set(['mailer', 'documents', 'lab', 'ekn', 'contacts', 'agent']);
-          if (!ALLOWED_TOKEN_APPS.has(appId)) {
-            throw new Error(`ЦУП: приложение «${appId}» не входит в список разрешённых для выдачи токенов.`);
+          // Динамический белый список выдачи токенов (ревью B4c, но из реестра,
+          // не из кода): разрешены app_id серверных плагинов, помеченных `appId`
+          // в registry.json, + базовый `mailer`. Если реестр ещё не загружен —
+          // не блокируем (финальный страж — auth-service: /auth/token не выдаст
+          // токен неизвестному приложению).
+          const registryEntries = this.manager.getRegistry();
+          const hasAppIdMarkers = registryEntries.some(e => !!e.appId);
+          if (hasAppIdMarkers) {
+            const allowed = new Set(['mailer']);
+            for (const e of registryEntries) {
+              if (e.appId) allowed.add(e.appId);
+            }
+            if (!allowed.has(appId)) {
+              throw new Error(`ЦУП: приложение «${appId}» не входит в список разрешённых для выдачи токенов.`);
+            }
           }
           return this.auth.getToken(appId);
         },
