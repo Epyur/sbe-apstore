@@ -28,6 +28,7 @@
 | GET | `{apiUrl}/auth/news` | сообщения, видимые вызывающему, с флагом `read` (Bearer `<key>`) |
 | POST | `{apiUrl}/auth/news/{id}/ack` | отметить прочитанным (Bearer `<key>`) |
 | GET | `{apiUrl}/auth/news/{id}/reads` | кто прочитал — только admin (Bearer `<key>`) |
+| POST | `{apiUrl}/auth/feedback` | обратная связь `{plugin_id, text}` (Bearer `<key>`): замечание → владельцу плагина, пустой `plugin_id` («идея») → собственнику ЦУП |
 
 Запросы через `requestUrl` (не `fetch`), клиентский таймаут 15 с. Реестр-URL настраивается в settings (`registryUrl`).
 
@@ -62,6 +63,7 @@
 | `createNews` | `(input: CreateNewsInput) => Promise<{id}>` | Публикация; `restricted`/`mandatory` — 403 не-admin |
 | `ackNews` | `(id: number) => Promise<void>` | Отметить прочитанным |
 | `getNewsReads` | `(id: number) => Promise<NewsReadStatus[]>` | Кто из адресатов прочитал — только admin |
+| `sendFeedback` | `(input: SendFeedbackInput) => Promise<void>` | Обращение в ЦУП: замечание владельцу плагина, «идея» (пустой `pluginId`) — собственнику ЦУП (требует ключ) |
 
 Ключ хранится в secretStorage Obsidian (стабильный секрет `sbe-auth-key`); `deviceId` — UUID в `data.json`.
 При 401 ключ очищается и выдаётся понятная ошибка; 403 на `presence`/`news` эндпоинтах означает
@@ -69,6 +71,12 @@
 
 Автозапуск: `main.ts` при старте вызывает `checkMandatoryNews()` — если у пользователя есть
 непрочитанное `mandatory`-сообщение, открывается `MandatoryNewsModal` с этим одним сообщением.
+`announceSelfUpdate()` публикует в «Новости» сообщение об обновлении самого ЦУП — один раз
+на версию (сравнение с `lastAnnouncedVersion` в `data.json`), в `try/catch`.
+
+Шапка ЦУП (кнопки над таблицей): «🟢 Онлайн» → `PresenceModal`, «📰 Новости» → `NewsModal`,
+«📖 Справка» → `HelpModal` (инструкция по системе), «✉ Обратная связь» → `FeedbackModal`
+(выбор плагина из реестра или «Есть идея» + текст; отправка только авторизованным).
 
 ## 4. Установка/обновление (механика)
 
@@ -87,7 +95,8 @@
   "lastCheckAt": 0,
   "apiUrl": "https://epyur.fvds.ru",
   "email": "user@tn.ru",
-  "deviceId": "uuid-v4 (генерируется один раз при первом запуске)"
+  "deviceId": "uuid-v4 (генерируется один раз при первом запуске)",
+  "lastAnnouncedVersion": "0.3.10"
 }
 ```
 

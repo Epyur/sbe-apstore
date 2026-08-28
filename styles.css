@@ -539,9 +539,23 @@
 }
 
 .tn-apstore-presence-modal .modal-content,
-.tn-apstore-news-modal .modal-content {
+.tn-apstore-news-modal .modal-content,
+.tn-apstore-help-modal .modal-content,
+.tn-apstore-feedback-modal .modal-content {
   max-height: 75vh;
   overflow-y: auto;
+}
+
+.tn-apstore-help-text {
+  margin-top: 6px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.tn-apstore-feedback-error {
+  color: var(--text-error);
+  font-weight: 600;
+  margin-bottom: 6px;
 }
 
 /* Центральное управление сервисными ключами (service_secret) */

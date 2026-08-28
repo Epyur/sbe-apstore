@@ -24,6 +24,27 @@
 
 ## История работ
 
+### 2026-08-28 — v0.3.10 (Справка + Обратная связь)
+- В шапке ЦУП (рядом с «Онлайн»/«Новости») добавлены две кнопки:
+  - **«📖 Справка»** → `HelpModal` (`src/ui/help-modal.ts`) — подробная инструкция
+    по работе с системой: что такое ЦУП, как установить плагин, как включить его
+    после установки в настройках Obsidian («Сторонние плагины»), как получить
+    доступ к серверу (email → ключ → активация), как обновлять плагины,
+    пользовательские приложения, онлайн/новости.
+  - **«✉ Обратная связь»** → `FeedbackModal` (`src/ui/feedback-modal.ts`) — форма
+    из двух полей: выбор плагина по списку реестра (или «💡 Есть идея») + текст
+    обращения + кнопка «Отправить». Отправка требует авторизации (Bearer
+    <мастер-ключ>); без авторизации — экран с предложением открыть настройки ЦУП
+    («Доступ к серверу»). Замечание уходит владельцу плагина, «идея» — собственнику ЦУП.
+- `sbe-core`: в `AuthService` добавлен `sendFeedback(input: SendFeedbackInput)` +
+  тип `SendFeedbackInput`; в `SbeAuthApi` добавлен `sendFeedback`. Серверная часть —
+  `auth-service` (`POST /auth/feedback`, `feedback.go`), см. `sbe-core/auth-service/AGENTS.md`.
+- Подключён механизм «Новости» ЦУП для самого ЦУП: `announceSelfUpdate()` в `onload()`
+  публикует новость об обновлении один раз на версию (поле `lastAnnouncedVersion`
+  в `data.json`), try/catch — недоступность ЦУП не мешает загрузке.
+- Версия 0.3.9 → **0.3.10** (manifest + package.json). `npx tsc --noEmit` EXIT=0;
+  `npm run build` OK; backend `go build`/`go vet`/`go test` — чисто.
+
 ### 2026-08-26 — v0.3.9 (рефактор: клиент авторизации и магазин — в sbe-core)
 - `AuthService` (`src/services/auth-service.ts`) перенесён в `sbe-core/src/auth-client.ts`,
   `StoreManager` (`src/services/store-manager.ts`) — в `sbe-core/src/store-manager.ts`
@@ -122,7 +143,7 @@
 ### 2026-08-17 — v0.3.1 (источник реестра)
 - `sbe-core`: `DEFAULT_REGISTRY_URL` → `https://epyur.fvds.ru/registry.json`
   (raw.githubusercontent.com отдавал 429 Too Many Requests, реестр в ЦУП пропадал;
-  реестр теперь отдаёт наш Caddy, файл — `/opt/mailers/www/registry.json`).
+  реестр теперь отдаёт наш Caddy, файл — статика стека на сервере).
 - `data.json`: `registryUrl` → `https://epyur.fvds.ru/registry.json`.
 - Пересборка `main.js`. Версия 0.3.0 → **0.3.1** (manifest + package.json).
 - `npx tsc --noEmit` EXIT=0; `npm run build` OK.

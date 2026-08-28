@@ -4,7 +4,7 @@ import { ApstoreSettingsTab } from './ui/settings-tab';
 import { MandatoryNewsModal } from './ui/news-modal';
 import { StoreManager } from '../../sbe-core/src/store-manager';
 import { AuthService } from '../../sbe-core/src/auth-client';
-import { publishService, unpublishService } from '../../sbe-core/src/bridge';
+import { publishService, unpublishService, getService } from '../../sbe-core/src/bridge';
 import { DEFAULT_REGISTRY_URL } from '../../sbe-core/src/registry';
 import { errorMessage } from '../../sbe-core/src/utils/errors';
 import type {
@@ -27,6 +27,8 @@ export interface ApstoreSettings {
   email: string;
   /** UUID устройства — генерируется один раз при первом запуске. */
   deviceId: string;
+  /** Версия ЦУП, для которой уже опубликована новость в канал «Новости» (announceUpdate). */
+  lastAnnouncedVersion: string;
 }
 
 const DEFAULT_SETTINGS: ApstoreSettings = {
@@ -35,6 +37,7 @@ const DEFAULT_SETTINGS: ApstoreSettings = {
   apiUrl: 'https://epyur.fvds.ru',
   email: '',
   deviceId: '',
+  lastAnnouncedVersion: '',
 };
 
 function generateDeviceId(): string {
@@ -97,6 +100,7 @@ export default class SbeApstorePlugin extends Plugin {
     this.app.workspace.onLayoutReady(() => {
       void this.checkUpdates(true);
       void this.checkMandatoryNews();
+      void this.announceSelfUpdate();
     });
   }
 
@@ -222,6 +226,28 @@ export default class SbeApstorePlugin extends Plugin {
     }
   }
 
+  /** Публикует в канал «Новости» сообщение об обновлении самого ЦУП — один раз
+   *  на версию (сравнивает с lastAnnouncedVersion). Недоступность ЦУП не должна
+   *  мешать загрузке плагина — всё в try/catch. */
+  private async announceSelfUpdate(): Promise<void> {
+    const version = this.manifest.version;
+    if (this.settings.lastAnnouncedVersion === version) return;
+    try {
+      const apstore = await getService('sbe-apstore');
+      await apstore.announceUpdate({
+        appId: this.manifest.id,
+        appName: this.manifest.name,
+        version,
+        summary:
+          'В ЦУП добавлены справка по работе с системой и форма обратной связи для предложений и замечаний по плагинам.',
+      });
+      this.settings.lastAnnouncedVersion = version;
+      await this.saveSettings();
+    } catch (e: unknown) {
+      console.warn('ЦУП: не удалось опубликовать новость об обновлении:', errorMessage(e));
+    }
+  }
+
   private buildApi(): SbeApstoreApi {
     return {
       getRegistry: async () => this.manager.getRegistry(),
@@ -271,6 +297,9 @@ export default class SbeApstorePlugin extends Plugin {
         addRegistryPlugin: async (plugin) => this.auth.addRegistryPlugin(plugin),
         removeRegistryAddition: async (registryId) => {
           await this.auth.removeRegistryAddition(registryId);
+        },
+        sendFeedback: async (input) => {
+          await this.auth.sendFeedback(input);
         },
       },
       announceUpdate: async (input: AnnounceUpdateInput) => {

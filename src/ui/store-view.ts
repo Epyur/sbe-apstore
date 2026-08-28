@@ -3,6 +3,8 @@ import { StoreManager } from '../../../sbe-core/src/store-manager';
 import type { AuthService } from '../../../sbe-core/src/auth-client';
 import { PresenceModal } from './presence-modal';
 import { NewsModal } from './news-modal';
+import { HelpModal } from './help-modal';
+import { FeedbackModal } from './feedback-modal';
 import { getService, isOpenable } from '../../../sbe-core/src/bridge';
 import { errorMessage } from '../../../sbe-core/src/utils/errors';
 import type { InstalledPlugin, PluginCard } from '../../../sbe-core/src/types';
@@ -76,6 +78,20 @@ export class ApstoreView extends ItemView {
       attr: { title: 'Сообщения от администрации и об обновлениях плагинов' },
     });
     newsBtn.addEventListener('click', () => new NewsModal(this.app, this.auth).open());
+
+    const helpBtn = header.createEl('button', {
+      cls: 'tn-btn tn-btn-ghost',
+      text: '📖 Справка',
+      attr: { title: 'Инструкция по работе с системой' },
+    });
+    helpBtn.addEventListener('click', () => new HelpModal(this.app).open());
+
+    const feedbackBtn = header.createEl('button', {
+      cls: 'tn-btn tn-btn-ghost',
+      text: '✉ Обратная связь',
+      attr: { title: 'Предложения и замечания по работе плагинов' },
+    });
+    feedbackBtn.addEventListener('click', () => new FeedbackModal(this.app, this.manager, this.auth).open());
   }
 
   private renderNav(): void {
