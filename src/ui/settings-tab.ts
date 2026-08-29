@@ -20,6 +20,7 @@ export class ApstoreSettingsTab extends PluginSettingTab {
     this.addCollapsibleSection(containerEl, 'Реестр плагинов', (body) => this.renderRegistrySection(body));
     this.addCollapsibleSection(containerEl, 'Сервисные ключи (service_secret)', (body) => this.renderSecretsSection(body));
     this.addCollapsibleSection(containerEl, 'Добавить плагин в реестр', (body) => this.renderRegistryAdminSection(body));
+    this.addCollapsibleSection(containerEl, 'Мои плагины', (body) => this.renderMyPluginsSection(body));
   }
 
   /** Сворачиваемая группа настроек: заголовок-переключатель + тело (ленивый рендер). */
@@ -178,6 +179,92 @@ export class ApstoreSettingsTab extends PluginSettingTab {
       }
     } catch (e: unknown) {
       box.createEl('p', { cls: 'tn-muted', text: `Не удалось загрузить список: ${errorMessage(e)}` });
+    }
+  }
+
+  /** Раздел «Мои плагины» (2026-08-29) — владелец плагина (ownerEmail записи реестра
+   *  совпадает с текущим email) или admin (видит все записи) заливает собранные
+   *  main.js/manifest.json/styles.css без доступа к серверу по SSH. См. docs/
+   *  superpowers/specs/2026-08-29-sbe-plugin-file-upload-design.md. Только загрузка
+   *  файлов для УЖЕ существующей записи — регистрация нового плагина остаётся в
+   *  разделе «Добавить плагин в реестр» выше. */
+  private async renderMyPluginsSection(containerEl: HTMLElement): Promise<void> {
+    containerEl.createEl('h3', { text: 'Мои плагины' });
+    const box = containerEl.createDiv();
+    const { plugin } = this;
+    if (!plugin.auth.getStatus().authorized) {
+      box.createEl('p', { cls: 'tn-muted', text: 'Не авторизован — загрузка файлов недоступна.' });
+      return;
+    }
+    box.createEl('p', {
+      cls: 'tn-muted',
+      text: 'Загрузка файлов для уже зарегистрированной записи реестра — новый плагин с нуля добавляется выше, разделом «Добавить плагин в реестр».',
+    });
+    let isAdmin = false;
+    try {
+      isAdmin = (await plugin.auth.getPresence()).isAdmin;
+    } catch (e: unknown) {
+      box.createEl('p', { cls: 'tn-muted', text: `Не удалось проверить права: ${errorMessage(e)}` });
+      return;
+    }
+    const myEmail = plugin.auth.getStatus().email ?? '';
+    const entries = plugin.manager.getRegistry().filter((e) => isAdmin || (e.ownerEmail && e.ownerEmail === myEmail));
+    if (entries.length === 0) {
+      box.createEl('p', { cls: 'tn-muted', text: 'Нет записей реестра, для которых вы владелец.' });
+      return;
+    }
+    for (const entry of entries) {
+      const card = box.createDiv({ cls: 'tn-apstore-mt12' });
+      const statusLine = entry.selfHosted
+        ? `обновлено: ${entry.uploadedBy ?? '?'}, ${entry.uploadedAt ? new Date(entry.uploadedAt).toLocaleString('ru-RU') : '?'}`
+        : 'файлы пока раздаются с GitHub — ни разу не загружались через ЦУП';
+      new Setting(card)
+        .setName(`${entry.name} (${entry.dir})`)
+        .setDesc(statusLine)
+        .setHeading();
+
+      let mainFile: File | undefined;
+      let manifestFile: File | undefined;
+      let stylesFile: File | undefined;
+      const mainInput = card.createEl('input', { attr: { type: 'file', accept: '.js' } });
+      card.createEl('label', { text: ' main.js' });
+      card.createEl('br');
+      mainInput.addEventListener('change', () => { mainFile = mainInput.files?.[0]; });
+      const manifestInput = card.createEl('input', { attr: { type: 'file', accept: '.json' } });
+      card.createEl('label', { text: ' manifest.json' });
+      card.createEl('br');
+      manifestInput.addEventListener('change', () => { manifestFile = manifestInput.files?.[0]; });
+      const stylesInput = card.createEl('input', { attr: { type: 'file', accept: '.css' } });
+      card.createEl('label', { text: ' styles.css (опционально)' });
+      card.createEl('br');
+      stylesInput.addEventListener('change', () => { stylesFile = stylesInput.files?.[0]; });
+
+      const uploadStatus = card.createDiv({ cls: 'tn-muted' });
+      new Setting(card)
+        .addButton((btn) => btn
+          .setButtonText('⬆ Загрузить')
+          .setCta()
+          .onClick(async () => {
+            if (!mainFile || !manifestFile) {
+              new Notice('ЦУП: main.js и manifest.json обязательны');
+              return;
+            }
+            uploadStatus.setText('Загрузка…');
+            try {
+              const files = {
+                main: await mainFile.arrayBuffer(),
+                manifest: await manifestFile.arrayBuffer(),
+                styles: stylesFile ? await stylesFile.arrayBuffer() : undefined,
+              };
+              await plugin.auth.uploadRegistryFiles(entry.dir, files);
+              new Notice(`ЦУП: файлы «${entry.name}» загружены`);
+              await plugin.manager.refresh();
+              this.display();
+            } catch (e: unknown) {
+              uploadStatus.setText('');
+              new Notice(`ЦУП: не удалось загрузить: ${errorMessage(e)}`);
+            }
+          }));
     }
   }
 
