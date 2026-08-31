@@ -186,7 +186,8 @@ export class ApstoreView extends ItemView {
     const meta = el.createDiv({ cls: 'tn-plugin-meta' });
     const remoteV = card.remote ? `репозиторий: v${card.remote.version}` : 'репозиторий недоступен';
     const localV = card.local ? `локально: v${card.local.version}` : 'не установлен';
-    meta.setText(`${remoteV} · ${localV} · ${card.entry.repo}`);
+    const source = card.entry.selfHosted ? 'файлы: ЦУП (epyur.fvds.ru)' : card.entry.repo;
+    meta.setText(`${remoteV} · ${localV} · ${source}`);
 
     const actions = el.createDiv({ cls: 'tn-plugin-actions' });
     actions.append(this.actionButton(card));
@@ -210,7 +211,8 @@ export class ApstoreView extends ItemView {
     const meta = el.createDiv({ cls: 'tn-plugin-meta' });
     const remoteV = card.remote ? `репозиторий: v${card.remote.version}` : 'репозиторий недоступен';
     const localV = card.local ? `локально: v${card.local.version}` : 'не установлен';
-    meta.setText(`${remoteV} · ${localV} · ${card.entry.repo}`);
+    const source = card.entry.selfHosted ? 'файлы: ЦУП (epyur.fvds.ru)' : card.entry.repo;
+    meta.setText(`${remoteV} · ${localV} · ${source}`);
 
     const actions = el.createDiv({ cls: 'tn-plugin-actions' });
 
