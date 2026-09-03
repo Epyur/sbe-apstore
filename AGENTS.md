@@ -1,7 +1,13 @@
 # AGENTS.md — sbe-apstore (ЦУП СБЕ ПМиПИР)
 
-Магазин плагинов компании: скачивает `registry.json` из `Epyur/sbe-apstore-registry`,
-устанавливает и обновляет плагины SBE из их GitHub-репозиториев (`main`-ветка).
+Магазин плагинов компании: скачивает `registry.json` (реверс-проксируется через
+`auth-service`, физически `epyur.fvds.ru/registry.json`), устанавливает и обновляет плагины
+SBE. Файлы плагина (`manifest.json`/`main.js`/`styles.css`) берутся с `epyur.fvds.ru/plugins/
+<dir>/*` (собственный сервер), если у записи реестра `selfHosted: true` — это единственный
+путь для всех 17 плагинов реестра на 2026-09-03; GitHub-репозиторий плагина
+(`raw.githubusercontent.com/<repo>/<branch>/*`) остаётся резервным путём для клиентов со
+старым `sbe-core`, не понимающим поле `selfHosted` (см.
+`docs/superpowers/specs/2026-08-29-sbe-plugin-file-upload-design.md`).
 
 ## Структура
 
