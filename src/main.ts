@@ -239,10 +239,9 @@ export default class SbeApstorePlugin extends Plugin {
         appName: this.manifest.name,
         version,
         summary:
-          'Исправлена ещё одна причина ошибки при обновлении плагинов: Obsidian мог ' +
-          'подставить из своего кэша старый файл вместо нового, и обновление ' +
-          'прерывалось сообщением о несовпадении контрольной суммы. Теперь файлы ' +
-          'при обновлении запрашиваются заново — перезапуск Obsidian не нужен.',
+          'В системе появился стенд разработки — инструмент для тех, кто создаёт ' +
+          'новые плагины. Он позволяет пробовать плагин в работе до его публикации ' +
+          'в общем каталоге.',
       });
       this.settings.lastAnnouncedVersion = version;
       await this.saveSettings();
@@ -281,7 +280,9 @@ export default class SbeApstorePlugin extends Plugin {
           const registryEntries = this.manager.getRegistry();
           const hasAppIdMarkers = registryEntries.some(e => !!e.appId);
           if (hasAppIdMarkers) {
-            const allowed = new Set(['mailer']);
+            // `dev` — служебное приложение стенда разработки (2026-10-02): в
+            // реестре его нет (плагин вне реестра), но токен ему нужен.
+            const allowed = new Set(['mailer', 'dev']);
             for (const e of registryEntries) {
               if (e.appId) allowed.add(e.appId);
             }
