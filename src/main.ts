@@ -292,6 +292,11 @@ export default class SbeApstorePlugin extends Plugin {
           }
           return this.auth.getToken(appId);
         },
+        forgetToken: (appId: string) => {
+          // Только кэш токена, ключ устройства не трогаем: 401 от сервиса
+          // означает «этот JWT не годится», а не «ключ отозван» (2026-10-30).
+          this.auth.forgetToken(appId);
+        },
         listDevices: async () => this.auth.listDevices(),
         revokeDevice: async (deviceId: string) => {
           await this.auth.revokeDevice(deviceId);
